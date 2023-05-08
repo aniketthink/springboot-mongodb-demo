@@ -1,7 +1,10 @@
 package com.aniketkolte.springbootmongodb.controller;
 
+import com.aniketkolte.springbootmongodb.exception.TodoCollectionException;
 import com.aniketkolte.springbootmongodb.model.TodoDTO;
 import com.aniketkolte.springbootmongodb.repository.TodoRepository;
+import com.aniketkolte.springbootmongodb.service.TodoService;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,21 +20,24 @@ public class TodoController {
     @Autowired
     private TodoRepository todoRepo;
 
+    @Autowired
+    private TodoService todoService;
+
     @GetMapping("/todos")
     public ResponseEntity<?> getAllTodos() {
-        List<TodoDTO> todo = todoRepo.findAll();
-        if (todo.size() > 0) return new ResponseEntity<List<TodoDTO>>(todo, HttpStatus.OK);
-        return new ResponseEntity<>("No todos available", HttpStatus.NOT_FOUND);
+        List<TodoDTO> todos = todoService.getAllTodos();
+        return new ResponseEntity<List<TodoDTO>>(todos, todos.size() > 0 ? HttpStatus.OK : HttpStatus.NOT_FOUND);
     }
 
     @PostMapping("/todos")
     public ResponseEntity<?> createTodo(@RequestBody TodoDTO todo) {
         try {
-            todo.setCreatedAt(new Date(System.currentTimeMillis()));
-            todoRepo.save(todo);
+            todoService.createTodo(todo);
             return new ResponseEntity<TodoDTO>(todo, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ConstraintViolationException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
+        } catch (TodoCollectionException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
         }
     }
 
