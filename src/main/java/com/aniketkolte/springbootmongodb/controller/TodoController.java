@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +38,21 @@ public class TodoController {
     public ResponseEntity<?> getSingleTodo(@PathVariable("id") String id) {
         Optional<TodoDTO> todoOptional = todoRepo.findById(id);
         if (todoOptional.isPresent()) return new ResponseEntity<TodoDTO>(todoOptional.get(), HttpStatus.OK);
+        return new ResponseEntity<>("Todo not found with id:" + id, HttpStatus.NOT_FOUND);
+    }
+
+    @PutMapping("/todos/{id}")
+    public ResponseEntity<?> updateById(@PathVariable("id") String id, @RequestBody TodoDTO todo) {
+        Optional<TodoDTO> todoOptional = todoRepo.findById(id);
+        if (todoOptional.isPresent()) {
+            TodoDTO todoToSave = todoOptional.get();
+            todoToSave.setCompleted(todo.isCompleted());
+            todoToSave.setTodo(todo.getTodo() != null ? todo.getTodo() : todoToSave.getTodo());
+            todoToSave.setDescription(todo.getDescription() != null ? todo.getDescription() : todoToSave.getDescription());
+            todoToSave.setUpdatedAt(new Date(System.currentTimeMillis()));
+            todoRepo.save(todoToSave);
+            return new ResponseEntity<TodoDTO>(todoToSave, HttpStatus.OK);
+        }
         return new ResponseEntity<>("Todo not found with id:" + id, HttpStatus.NOT_FOUND);
     }
 
